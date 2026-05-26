@@ -1,0 +1,3 @@
+[submodule "scripts/eeg_shared_functions"]
+	path = scripts/eeg_shared_functions
+	url = https://github.com/Lan3a/eeg_shared_functions.git

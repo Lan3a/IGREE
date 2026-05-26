@@ -1,6 +1,15 @@
 
-**/data/**
-
+**/data/
 !**/data/README.md
 
+**/projects/
+!**/projects/README.md
+
 **/*.asv
+**/*.lnk 
+
+**/z*
+!**/z*/
+.Rproj.user
+
+**/*.proj

@@ -1,9 +1,13 @@
 
-%TODO fix data still in another script, do these:
-% - fix markers
-% - trim out unnecesary regions
-% - add custom event and time channels (better since epoching directly
+%TODO - fix data still in another script, do these:
+%   - fix markers
+%   - trim out unnecesary regions
+%   - add custom event and time channels (better since epoching directly
 % deletes marked ones, so just put the event and time channels in
+%   - new sets at every crucial step
+% 
+% DONE - gitignore
+
 
 clc; clear; close all;
 project = initIGREE;
@@ -12,8 +16,8 @@ project = initIGREE;
 
 
 %% Load EEG, resample, band filter, reject bad channel
-inDir = fullfile(project.dataPath, "correct_raw_eeg");
-outDir = fullfile(project.dataPath, "preprocess_eeg", "bad_channels_rejected");
+inDir = fullfile(project.dir.data, "correct_raw_eeg");
+outDir = fullfile(project.dir.data, "preprocess_eeg", "bad_channels_rejected");
 inExt = "set"; outExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt}, {outDir, outExt});
 
@@ -41,24 +45,16 @@ for fidx = 1:length(dataFiles)
         rejBadChanGUI(EEG);
         custom_pop_spectopo(EEG);
         
-        % user dialog
+        % =========================================================================
+        % USER DIALOG
         choice = askAction();
-        saveData = 0;
-        nextData = 0;
-        switch choice
-            case 'Save this and Continue', saveData = 1; nextData = 1;
-            case 'Save this and Exit', saveData = 1;                
-            case 'Skip this', nextData = 1;
-            case 'Reset this', continue;
-            case 'Cancel', close all; error('>>>> Cancelled');
-            otherwise, close all; error('>>>> Cancelled');
-        end
-
         % if save
-        if saveData
+        if contains(choice, 'Save')
             newSetName = sprintf('(%s) bad channels rejected', dataFiles(fidx).bname);
-            [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0, 'setname', newSetName, 'gui','off');
-            EEG = pop_saveset( EEG, 'filename',dataFiles(fidx).fname,'filepath',char(outDir));
+            saveDir = outDir;
+            saveFileName = dataFiles(fidx).fname;
+            saveNewEegSet(EEG, newSetName, saveDir, saveFileName);
+            
             try
                 pngStruct = EEG.moreInfo.badTimeDataPng;
                 savePngDir = fullfile(outDir, 'bad_time_data_pngs', dataFiles(fidx).bname);
@@ -66,25 +62,31 @@ for fidx = 1:length(dataFiles)
             catch, disp('no pngs to save')
             end
             disp('saving...');
-            close all;
         end
 
-        % if not cont
-        if ~nextData
-            error('>>>> Saved this one and Exited');
+        % execute other actions
+        switch choice
+            case 'Save this and Continue'
+            case 'Save this and Exit', close all; error('>>>> Saved this one and exited');
+            case 'Skip this'
+            case 'Reset this', close all; continue;
+            case 'Cancel', close all; error('>>>> Cancelled');
+            otherwise, close all; error('>>>> Cancelled');
         end
-        
+
         % to next data
+        close all;
         printLoopProgress(fidx, numel(dataFiles));
         break
+        % =========================================================================
     end
 end
-beep; disp('done!');
+close all; beep; cpbGreen('All done!');
 
 %% CAR reference, bad channel interp, run ICA
 
-inDir = fullfile(project.dataPath, "preprocess_eeg", "bad_channels_rejected");
-outDir = fullfile(project.dataPath, "preprocess_eeg", "ICA_ready");
+inDir = fullfile(project.dir.data, "preprocess_eeg", "bad_channels_rejected");
+outDir = fullfile(project.dir.data, "preprocess_eeg", "ICA_ready");
 inExt = "set"; outExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt}, {outDir, outExt});
 
@@ -95,18 +97,18 @@ for fidx = 1:length(dataFiles)
     % run ICA
     EEG = pop_runica(EEG, 'icatype', 'runica', 'extended',1,'interrupt','on');
     
-    % make new set and save
+    % Save set
     newSetName = sprintf('(%s) ICA ready', dataFiles(fidx).bname);
-    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0, 'setname', newSetName, 'gui','off');
-    EEG = pop_saveset( EEG, 'filename',dataFiles(fidx).fname,'filepath',char(outDir));
-    printLoopProgress(fidx, numel(dataFiles));
+    saveDir = outDir;
+    saveFileName = dataFiles(fidx).fname;
+    saveNewEegSet(EEG, newSetName, saveDir, saveFileName);
 end
-
+close all; beep; cpbGreen('All done!');
 
 %% ICA rejection
 
-inDir = fullfile(project.dataPath, "preprocess_eeg", "ICA_ready");
-outDir = fullfile(project.dataPath, "preprocess_eeg", "ICA_done");
+inDir = fullfile(project.dir.data, "preprocess_eeg", "ICA_ready");
+outDir = fullfile(project.dir.data, "preprocess_eeg", "ICA_done");
 inExt = "set"; outExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt}, {outDir, outExt});
 
@@ -123,53 +125,50 @@ for fidx = 1:length(dataFiles)
         % reject ICs
         rejICsGUI(EEG);
         
-        % user dialog
+        % =========================================================================
+        % USER DIALOG
         choice = askAction();
-        saveData = 0;
-        nextData = 0;
-        switch choice
-            case 'Save this and Continue', saveData = 1; nextData = 1;
-            case 'Save this and Exit', saveData = 1;                
-            case 'Skip this', nextData = 1;
-            case 'Reset this', continue;
-            case 'Cancel', close all; error('>>>> Cancelled');
-            otherwise, close all; error('>>>> Cancelled');
-        end
         % if save
-        if saveData
+        if contains(choice, 'Save')
             newSetName = sprintf('(%s) ICA done', dataFiles(fidx).bname);
-            [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0, 'setname', newSetName, 'gui','off');
-            EEG = pop_saveset( EEG, 'filename',dataFiles(fidx).fname,'filepath',char(outDir));
+            saveDir = outDir;
+            saveFileName = dataFiles(fidx).fname;
+            saveNewEegSet(EEG, newSetName, saveDir, saveFileName);
+            
             try
-                pngStruct = EEG.moreInfo.badTimeDataPng;
+                pngStruct = EEG.moreInfo.rejICsPng;
                 savePngDir = fullfile(outDir, 'rejected_IC_pngs', dataFiles(fidx).bname);
                 saveStructStoredPng(pngStruct, savePngDir);
             catch, disp('no pngs to save')
             end
             disp('saving...');
-            close all;
         end
-        % if not cont
-        if ~nextData
-            error('>>>> Saved this one and Exited');
+
+        % execute other actions
+        switch choice
+            case 'Save this and Continue'
+            case 'Save this and Exit', close all; error('>>>> Saved this one and exited');
+            case 'Skip this'
+            case 'Reset this', close all; continue;
+            case 'Cancel', close all; error('>>>> Cancelled');
+            otherwise, close all; error('>>>> Cancelled');
         end
-        
+
         % to next data
+        close all;
         printLoopProgress(fidx, numel(dataFiles));
         break
+        % =========================================================================
+
     end
 end
-beep; beep; beep; beep; beep; disp('done!');
-
-
-
-    
+close all; beep; cpbGreen('All done!');
 
 
 %% interpolate bad channel, final re-reference, and rejecting bad epochs
 
-inDir = fullfile(project.dataPath, "preprocess_eeg", "ICA_done");
-outDir = fullfile(project.dataPath, "preprocess_eeg", "Epoch_rejection_done");
+inDir = fullfile(project.dir.data, "preprocess_eeg", "ICA_done");
+outDir = fullfile(project.dir.data, "preprocess_eeg", "Epoch_rejection_done");
 inExt = "set"; outExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt}, {outDir, outExt});
 
@@ -289,63 +288,51 @@ for fidx = 1:length(dataFiles)
         EEG = tempEEG;
         eeglab redraw
 
-        IGREE_pop_rejmenu(EEG, 1, allChanData) %output EEG.data will contain all channels
+        pop_rejmenu_IGREE(EEG, 1, allChanData) %output EEG.data will contain all channels
         
-        % user dialog
+        % =========================================================================
+        % USER DIALOG
         choice = askAction();
-        saveData = 0;
-        nextData = 0;
+        % if save
+        if contains(choice, 'Save')
+            newSetName = sprintf('(%s) Epoch rejection done', dataFiles(fidx).bname);
+            saveDir = outDir;
+            saveFileName = dataFiles(fidx).fname;
+            saveNewEegSet(EEG, newSetName, saveDir, saveFileName);
+            
+            disp('saving...');
+        end
+
+        % execute other actions
         switch choice
-            case 'Save this and Continue', saveData = 1; nextData = 1;
-            case 'Save this and Exit', saveData = 1;                
-            case 'Skip this', nextData = 1;
-            case 'Reset this', continue;
+            case 'Save this and Continue'
+            case 'Save this and Exit', close all; error('>>>> Saved this one and exited');
+            case 'Skip this'
+            case 'Reset this', close all; continue;
             case 'Cancel', close all; error('>>>> Cancelled');
             otherwise, close all; error('>>>> Cancelled');
         end
-        % if save
-        if saveData
-            disp(EEG.chanlocs);
 
-            % EEG.nbchan = EEG.nbchan + 2 %already done in IGREE_pop_rejmenu
-            EEG.chanlocs = tempEEG.chanlocs;
-            EEG.chanlocs(end+1).labels = 'TIMEMS';
-            EEG.chanlocs(end+1).labels = 'SESSIONIDX';
-
-            % necessary so that creating new set won't break chanlocs
-            ALLEEG(end).chanlocs = EEG.chanlocs;
-            ALLEEG(end).nbchan = EEG.nbchan;
-
-            newSetName = sprintf('(%s) Epoch rejection done', dataFiles(fidx).bname);
-            EEG = pop_saveset( EEG, 'filename',dataFiles(fidx).fname,'filepath',char(outDir));
-
-            disp('saving...');
-            close all;
-        end
-        % if not cont
-        if ~nextData
-            error('>>>> Saved this one and Exited');
-        end
-        
         % to next data
+        close all;
         printLoopProgress(fidx, numel(dataFiles));
         break
+        % =========================================================================
     end
 end
-beep; disp('done!');
+close all; beep; cpbGreen('All done!');
+
+%%
+
+% look at cmd window and test
+a = EEG.data(end-1:end, :)
+disp(a)
 
 
 
-
-
-
-
-
-
-%% X Archive
+%% zx Archive
 
     % removing Cpz
-    % TODO
     % EEG.moreInfo.chanLocsRefForInterp = EEG.chanlocs; %for later interp ref
     % 
     % rejChansNoInterp = {'Cpz'};
@@ -354,9 +341,4 @@ beep; disp('done!');
     % 
     % idx = find(ismember({EEG.chanlocs.labels},rejChansNoInterp)); %update the later interp ref
     % EEG.moreInfo.chanLocsRefForInterp(idx) = [];
-
-
-
-
-
 

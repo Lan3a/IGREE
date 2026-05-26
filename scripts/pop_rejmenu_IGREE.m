@@ -1,7 +1,7 @@
-% IGREE_pop_rejmenu - Main menu for rejecting trials in an EEG dataset
+% pop_rejmenu_IGREE - Main menu for rejecting trials in an EEG dataset
 %
-% Usage: >> IGREE_pop_rejmenu(INEEG, typerej);
-%          IGREE_pop_rejmenu(INEEG, typerej, data_full);
+% Usage: >> pop_rejmenu_IGREE(INEEG, typerej);
+%          pop_rejmenu_IGREE(INEEG, typerej, data_full);
 %
 % Inputs:
 %   INEEG     - input dataset used for automatic bad-epoch detection and UI
@@ -52,7 +52,7 @@
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 % THE POSSIBILITY OF SUCH DAMAGE.
 
-function IGREE_pop_rejmenu(EEG, icacomp, data_full)
+function pop_rejmenu_IGREE(EEG, icacomp, data_full)
 
 if nargin < 3
     data_full = [];
@@ -60,10 +60,10 @@ end
 use_separate_reject = ~isempty(data_full);
 if use_separate_reject
     if ~(isnumeric(data_full) && ndims(data_full) == 3)
-        error('IGREE_pop_rejmenu: 3rd argument must be a 3-D numeric matrix [chans x pnts x trials]');
+        error('pop_rejmenu_IGREE: 3rd argument must be a 3-D numeric matrix [chans x pnts x trials]');
     end
     if size(data_full, 2) ~= EEG.pnts || size(data_full, 3) ~= EEG.trials
-        error('IGREE_pop_rejmenu: 3rd argument time/trial dims must match EEG.pnts (%d) and EEG.trials (%d); got [%d x %d x %d]', ...
+        error('pop_rejmenu_IGREE: 3rd argument time/trial dims must match EEG.pnts (%d) and EEG.trials (%d); got [%d x %d x %d]', ...
               EEG.pnts, EEG.trials, size(data_full,1), size(data_full,2), size(data_full,3));
     end
 end
@@ -85,10 +85,10 @@ if ~isempty(findobj('tag', tagmenu))
 end
 
 figure('visible', 'off', 'numbertitle', 'off', 'name', rejtitle, 'tag', tagmenu);
-setappdata(gcf, 'IGREE_pop_rejmenu_origtrials', EEG.trials);
-setappdata(gcf, 'IGREE_pop_rejmenu_use_separate_reject', use_separate_reject);
+setappdata(gcf, 'pop_rejmenu_IGREE_origtrials', EEG.trials);
+setappdata(gcf, 'pop_rejmenu_IGREE_use_separate_reject', use_separate_reject);
 if use_separate_reject
-    setappdata(gcf, 'IGREE_pop_rejmenu_data_full', data_full);
+    setappdata(gcf, 'pop_rejmenu_IGREE_data_full', data_full);
 end
 
 % definition of callbacks
@@ -215,7 +215,7 @@ cb_compkurteeg  = [ cb_compkurthead ...
 % -----------------------------------------------------
 if use_separate_reject
     cb_reject_else = [ ...
-                   '   data_full = getappdata(gcbf, ''IGREE_pop_rejmenu_data_full'');' ...
+                   '   data_full = getappdata(gcbf, ''pop_rejmenu_IGREE_data_full'');' ...
                    '   EEG_full = EEG;' ...
                    '   EEG_full.data    = data_full;' ...
                    '   EEG_full.nbchan  = size(data_full, 1);' ...
@@ -251,11 +251,11 @@ cb_reject =      [ 'set( findobj(''parent'', gcbf, ''tag'', ''rejstatus''), ''va
                    'end;' ];
 
 if use_separate_reject
-    cb_clear =       [ 'data_full_saved = getappdata(gcbf, ''IGREE_pop_rejmenu_data_full''); close gcbf; EEG = rmfield( EEG, ''reject''); EEG.reject.rejmanual = [];' ...
-                       'EEG=eeg_checkset(EEG); IGREE_pop_rejmenu(EEG,' int2str(icacomp) ', data_full_saved); clear data_full_saved;' ];
+    cb_clear =       [ 'data_full_saved = getappdata(gcbf, ''pop_rejmenu_IGREE_data_full''); close gcbf; EEG = rmfield( EEG, ''reject''); EEG.reject.rejmanual = [];' ...
+                       'EEG=eeg_checkset(EEG); pop_rejmenu_IGREE(EEG,' int2str(icacomp) ', data_full_saved); clear data_full_saved;' ];
 else
     cb_clear =       [ 'close gcbf; EEG = rmfield( EEG, ''reject''); EEG.reject.rejmanual = [];' ...
-                       'EEG=eeg_checkset(EEG); IGREE_pop_rejmenu(EEG,' int2str(icacomp) ');' ];
+                       'EEG=eeg_checkset(EEG); pop_rejmenu_IGREE(EEG,' int2str(icacomp) ');' ];
 end
 
 cb_close =       [ 'close gcbf;' ...
@@ -451,7 +451,7 @@ listui = {{'Style', 'text', 'string', 'Mark trials by appearance', 'fontweight',
     { 'style', 'checkbox', 'String', 'Abnormal spectra', 'tag', 'IFreq', 'value', 1}, ...
     ...
 	{ }, ...
-    { 'Style', 'pushbutton', 'string', 'REFRESH', 'callback', [ 'IGREE_pop_rejmenu_updatesummary(EEG,' int2str(icacomp) ',''' tagmenu ''');' ] }, ...
+    { 'Style', 'pushbutton', 'string', 'REFRESH', 'callback', [ 'pop_rejmenu_IGREE_updatesummary(EEG,' int2str(icacomp) ',''' tagmenu ''');' ] }, ...
     { 'Style', 'text', 'string', epochsummary_init, 'tag', 'epochsummary', 'horizontalalignment', 'left' }, ...
  	{ 'Style', 'pushbutton', 'string', 'CLOSE (KEEP MARKS)', 'callback', cb_close }, ...
  	{ 'Style', 'pushbutton', 'string', 'CLEAR ALL MARKS', 'callback', cb_clear  }, ...

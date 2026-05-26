@@ -2,17 +2,12 @@ function project = initIGREE()
 
 project.name = "IGREE";
 
-project.scriptsPath = fileparts(mfilename('fullpath'));
-addpath(genpath(project.scriptsPath));
+% ------- dir
+project.dir.scripts = fileparts(mfilename('fullpath'));
+[project.dir.root, ~] = fileparts(project.dir.scripts);
+project.dir.data = fullfile(project.dir.root, 'data');
 
-[project.rootPath, ~] = fileparts(project.scriptsPath);
-
-project.dataPath = fullfile(project.rootPath, 'data');
-
-if ~exist(project.dataPath, 'dir')
-    error(">>>> Invalid data path !!!")
-end
-
+% ------- other configs
 project.useChannels = { ...
 'FP1', 'FP2', ...
 'AF7', 'AF3', 'AFZ', 'AF4', 'AF8', ...

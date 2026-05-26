@@ -1,8 +1,8 @@
-function IGREE_pop_rejmenu_updatesummary(EEG, icacomp, tagmenu)
-% Update the epoch summary text in IGREE_pop_rejmenu.
+function pop_rejmenu_IGREE_updatesummary(EEG, icacomp, tagmenu)
+% Update the epoch summary text in pop_rejmenu_IGREE.
 %
 % Shows "<remaining> remains (<rejected> / <total> rejected)" for the
-% epochs currently marked in EEG. When IGREE_pop_rejmenu was launched
+% epochs currently marked in EEG. When pop_rejmenu_IGREE was launched
 % with a full-channel 3-D matrix (data_full), the channel count of that
 % matrix is appended to the summary so the user can confirm the REJECT
 % button will operate on the full set of channels.
@@ -26,7 +26,7 @@ end
 
 origtrials = [];
 try
-    origtrials = getappdata(fig, 'IGREE_pop_rejmenu_origtrials');
+    origtrials = getappdata(fig, 'pop_rejmenu_IGREE_origtrials');
 catch
     origtrials = [];
 end
@@ -48,7 +48,7 @@ remcount = origtrials - rejcount;
 
 full_info = '';
 try
-    data_full = getappdata(fig, 'IGREE_pop_rejmenu_data_full');
+    data_full = getappdata(fig, 'pop_rejmenu_IGREE_data_full');
     if ~isempty(data_full) && isnumeric(data_full) && ndims(data_full) == 3
         full_info = sprintf(' | REJECT target: full data %d ch x %d pnts', ...
                             size(data_full, 1), size(data_full, 2));
