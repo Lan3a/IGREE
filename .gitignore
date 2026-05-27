@@ -1,15 +1,22 @@
 
+# no data folders, except README.md directly inside
 **/data/
 !**/data/README.md
 
+# no project folders, except READ.md directly inside
 **/projects/
 !**/projects/README.md
 
+# no MATLAB .asv
 **/*.asv
+
+# no shortcut files
 **/*.lnk 
 
-**/z*
-!**/z*/
-.Rproj.user
+# ignore files and folders with prefix z_ and zx_
+z_*
+zx_*
 
+# ignore R project files
+.Rproj.user
 **/*.proj
