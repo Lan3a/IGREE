@@ -21,5 +21,8 @@ project.useChannels = { ...
 'VEO','HEO' ...
 };
 
+% ------- addpath dir
+addpath(genpath(project.dir.scripts));
+rmpath('zx_local_archive')
 
 end

@@ -14,8 +14,8 @@
 clc; clear; close all;
 project = initIGREE;
 
-inDir = fullfile(project.dataPath, "incorrect_raw_eeg");
-outDir = fullfile(project.dataPath, "correct_raw_eeg");
+inDir = fullfile(project.dir.data, "incorrect_raw_eeg");
+outDir = fullfile(project.dir.data, "correct_raw_eeg");
 inExt = "set"; outExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt}, {outDir, outExt});
 
@@ -49,7 +49,7 @@ pv(:, 1) = "p" + sorted_pv_idx;
 
 %%
 % load gv
-load(fullfile(project.scriptsPath, 'gv.mat'));
+load(fullfile(project.dir.scripts, 'gv.mat'));
 
 gb1 = ["gb1", "180000"];
 gb2 = ["gb2", "180000"];
