@@ -31,10 +31,13 @@ for fidx = 1:length(dataFiles)
     EEG = pop_resample( EEG, 500);
 
     % band filtering
-    EEG = pop_eegfiltnew(EEG, 'locutoff',48,'hicutoff',52,'revfilt',1); % notch 48-52 Hz
-    EEG = pop_eegfiltnew(EEG, 'locutoff',1,'hicutoff',98); % band pass 1-98 Hz 
+    EEG = pop_eegfiltnew(EEG, 'locutoff',48,'hicutoff',52,'revfilt',1); %notch 48-52 Hz
+    EEG = pop_eegfiltnew(EEG, 'locutoff',1,'hicutoff',98); %band pass 1-98 Hz 
     
-    %TODO new set here
+    newSetName = sprintf('(%s) rejecting bad channels manually...', dataFiles(fidx).bname);
+    [~, EEG, ~] = pop_newset([], EEG, 0, 'setname', newSetName, 'gui','off');
+    
+    EEG.moreInfo.chanLocsRefForInterp = EEG.chanlocs; %eeglab compares the chanlocs later to this full chanlocs to see which chan is missing, then interp
 
     % reject bad channels
     tempEEG = EEG;
