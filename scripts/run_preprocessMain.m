@@ -1,13 +1,17 @@
-
-%TODO - fix data still in another script, do these:
-%   - fix markers
-%   - trim out unnecesary regions
-%   - add custom event and time channels (better since epoching directly
-% deletes marked ones, so just put the event and time channels in
-%   - new sets at every crucial step
 % 
-% DONE - gitignore
-
+% STEPS: -> refer to the google slide
+% 
+% TODO:
+%   [x] fix markers and trim unnecessary time points 
+%       -> done in another script
+%   [ ] new sets at every crucial step
+%   [ ] automated bad channel rej, IC rej, epoch rej
+%   [ ] epoch-by-epoch channel interpolation
+%   [ ] ASR implementation
+%   [ ] RESIT / z normalization
+%   [ ] (if ASR fails) outlier regression
+% 
+% 
 
 clc; clear; close all;
 project = initIGREE;
