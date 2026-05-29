@@ -23,6 +23,11 @@ project.useChannels = { ...
 
 % ------- addpath dir
 addpath(genpath(project.dir.scripts));
-rmpath('zx_local_archive')
+
+
+% ALAN LAPTOP STUFF, won't throw error if otherwise
+% ------- remove zx_local_archive dir
+try rmpath(fullfile(project.dir.scripts, 'zx_local_archive')); catch, end
+
 
 end
