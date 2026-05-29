@@ -3,7 +3,7 @@ function project = initIGREE()
 project.name = "IGREE";
 
 % ------- dir
-project.dir.scripts = fileparts(mfilename('fullpath'));
+project.dir.scripts = fileparts(mfilename('fullpath')); % -> matlab scripts
 [project.dir.root, ~] = fileparts(project.dir.scripts);
 project.dir.data = fullfile(project.dir.root, 'data');
 
