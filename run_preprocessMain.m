@@ -1,17 +1,9 @@
 % 
 % STEPS: -> refer to the google slide
 % 
-% TODO:
-%   [x] fix markers and trim unnecessary time points 
-%       -> done in another script
-%   [ ] new sets at every crucial step
-%   [ ] automated bad channel rej, IC rej, epoch rej
-%   [ ] epoch-by-epoch channel interpolation
-%   [ ] ASR implementation
-%   [ ] RESIT / z normalization
-%   [ ] (if ASR fails) outlier regression
+% TODO: -> moved to README.md
 % 
-% 
+
 
 clc; clear; close all;
 project = initIGREE;
@@ -38,10 +30,10 @@ for fidx = 1:length(dataFiles)
     EEG = pop_eegfiltnew(EEG, 'locutoff',48,'hicutoff',52,'revfilt',1); %notch 48-52 Hz
     EEG = pop_eegfiltnew(EEG, 'locutoff',1,'hicutoff',98); %band pass 1-98 Hz 
     
+    EEG.moreInfo.chanLocsRefForInterp = EEG.chanlocs; %eeglab compares the chanlocs later to this full chanlocs to see which chan is missing, then interp
+
     newSetName = sprintf('(%s) rejecting bad channels manually...', dataFiles(fidx).bname);
     [~, EEG, ~] = pop_newset([], EEG, 0, 'setname', newSetName, 'gui','off');
-    
-    EEG.moreInfo.chanLocsRefForInterp = EEG.chanlocs; %eeglab compares the chanlocs later to this full chanlocs to see which chan is missing, then interp
 
     % reject bad channels
     tempEEG = EEG;
@@ -175,7 +167,7 @@ close all; beep; cpbGreen('All done!');
 %% interpolate bad channel, final re-reference, and rejecting bad epochs
 
 inDir = fullfile(project.dir.data, "preprocess_eeg", "ICA_done");
-outDir = fullfile(project.dir.data, "preprocess_eeg", "Epoch_rejection_done");
+outDir = fullfile(project.dir.data, "preprocess_eeg", "tempepoch_rejection_done");
 inExt = "set"; outExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt}, {outDir, outExt});
 
@@ -227,7 +219,6 @@ for fidx = 1:length(dataFiles)
     tempMoreInfo = EEG.moreInfo;
 
     epochLenSecond = 1;
-    %FUTURE add more if need overlapping regions for more data
 
     srate = EEG.srate;
     data = EEG.data;
@@ -278,19 +269,21 @@ for fidx = 1:length(dataFiles)
     % epoched_data to EEG.data, use their own functions for it to adjust
     % workspace vars manually.
     EEG = eeg_checkset(EEG);
-
+    
+    % plug values back
     EEG.moreInfo = tempMoreInfo;
     EEG.moreInfo.epochedTimeMsChannel = cat(3, timeMsChunks{:});
     EEG.moreInfo.epochedSessionIdxChannel = cat(3, sessionIdxChunks{:});
-
-    % newSetName = sprintf()
-    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'setname','custom chans added','gui','off');
+    EEG.chanlocs = tempChanLocs;
     
-
     % -------------------------------------------------------------------------
     % rejecting bad epochs
     allChanData = cat(1, EEG.data, EEG.moreInfo.epochedTimeMsChannel, EEG.moreInfo.epochedSessionIdxChannel);
     tempEEG = EEG;
+
+    newSetName = sprintf('(%s) custom channels added', dataFiles(fidx).bname);
+    [~, EEG, ~] = pop_newset([], EEG, 0, 'setname', newSetName, 'gui','off');
+    
     while true
         EEG = tempEEG;
         eeglab redraw
@@ -302,6 +295,8 @@ for fidx = 1:length(dataFiles)
         choice = askAction();
         % if save
         if contains(choice, 'Save')
+            
+
             newSetName = sprintf('(%s) Epoch rejection done', dataFiles(fidx).bname);
             saveDir = outDir;
             saveFileName = dataFiles(fidx).fname;
@@ -329,11 +324,152 @@ for fidx = 1:length(dataFiles)
 end
 close all; beep; cpbGreen('All done!');
 
-%%
+%% 
 
-% look at cmd window and test
-a = EEG.data(end-1:end, :)
-disp(a)
+%TODO - make the whole structure good
+inDir = fullfile(project.dir.data, "preprocess_eeg", "tempepoch_rejection_done");
+inExt = "set";
+dataFiles = findFilesToProcess({inDir, inExt});
+EEG = pop_loadset('filename',dataFiles(1).fname,'filepath',dataFiles(1).dir);
+[ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
+tempEEG = EEG;
+
+%%
+EEG = tempEEG;
+
+window_ms = 1000;
+overlap_ms = 500;
+
+window_pts = window_ms/1000 * EEG.srate;
+overlap_pts = overlap_ms/1000 * EEG.srate;
+
+time_data = EEG.data(end-1,:);
+sampling_interval = 1000/EEG.srate;
+all_cont_ranges = extractContRanges(time_data, sampling_interval);
+subepoched_eeg_data = outputSubepochEeg(all_cont_ranges, window_pts, overlap_pts, EEG.data);
+
+EEG.data = subepoched_eeg_data;
+EEG = eeg_checkset(EEG);
+
+eeglab redraw
+
+
+
+function all_cont_ranges = extractContRanges(time_data, sampling_interval)
+    % Only consider non-NaN entries for break detection
+    valid_idx = find(~isnan(time_data));
+
+    if isempty(valid_idx)
+        all_cont_ranges = [];
+        return;
+    end
+
+    valid_time = time_data(valid_idx);
+
+    temp1 = diff(valid_time);
+    temp2 = temp1 ~= sampling_interval;
+    break_pos = find(temp2);
+
+    temp3a = valid_idx(break_pos);
+    temp3b = valid_idx(break_pos + 1);
+
+    temp4 = [valid_idx(1), temp3b; temp3a, length(time_data)];
+    all_cont_ranges = permute(temp4, [2,1]);
+end
+
+function subepoched_eeg_data = outputSubepochEeg(all_cont_ranges, window_pts, overlap_pts, epoched_eeg_data)
+    all_moving_epoch_ranges = [];
+    
+    for i = 1:size(all_cont_ranges, 1)
+        seg_start = all_cont_ranges(i, 1);
+        seg_end = all_cont_ranges(i, 2);
+
+        for w_start = seg_start : overlap_pts : seg_end
+            w_end = w_start + window_pts - 1;
+            if w_end > seg_end
+                break;
+            end
+            % if valid subepoch
+            all_moving_epoch_ranges(end+1, :) = [w_start, w_end];
+        end
+    end
+
+    % -------------------------------------------------------------------------
+
+    ranges = all_moving_epoch_ranges; %MEM - refactor for each section
+    cont_data = reshape(epoched_eeg_data, size(epoched_eeg_data, 1), []);
+
+    n_chans = size(cont_data,1);
+    n_epochs = size(ranges, 1);
+    epoch_len = ranges(1, 2) - ranges(1, 1) + 1; %all ranges equal size
+    subepoched_eeg_data = zeros(n_chans, epoch_len, n_epochs);
+
+    for i = 1:n_epochs
+        range_pts = ranges(i, 1):ranges(i, 2);
+        subepoched_eeg_data(:, :, i) = cont_data(:,range_pts);
+    end
+end
+
+     
+
+
+
+
+% =========================================================================
+
+
+% function all_moving_epoch_ranges = extractSubepochRanges(all_cont_ranges, window_pts, overlap_pts)
+%     all_moving_epoch_ranges = [];
+% 
+%     for i = 1:size(all_cont_ranges, 1)
+%         seg_start = all_cont_ranges(i, 1);
+%         seg_end = all_cont_ranges(i, 2);
+% 
+%         for w_start = seg_start : overlap_pts : seg_end
+%             w_end = w_start + window_pts - 1;
+%             if w_end > seg_end
+%                 break;
+%             end
+%             all_moving_epoch_ranges(end+1, :) = [w_start, w_end];
+%         end
+%     end
+% end
+% 
+% function subepoched_eeg_data = extractEegSubepochs(all_moving_epoch_ranges, epoched_eeg_data)
+%     ranges = all_moving_epoch_ranges;
+%     data = eeg_data;
+% 
+%     n_chans = size(eeg_data,1)
+%     n_ranges = size(ranges, 1);
+%     epoch_len  = ranges(1, 2) - ranges(1, 1) + 1;   % all ranges equal size
+%     subepoched_data   = zeros(n_chans, epoch_len, n_ranges);
+% 
+%     for i = 1:n_ranges
+%         range_pts = ranges(i, 1):ranges(i, 2);
+%         subepoched_data(:, :, i) = data(:,);
+%     end
+% end
+
+
+% % --- Test with sample data ---
+% points = [1, 4; 5, 8; 9, 15];
+% window = 4;
+% step   = 2;
+% out = sliding_windows(points, window, step);
+% disp(out);
+
+% function all_cont_ranges = extractContRange(time_data, sampling_interval)
+%     temp1 = diff(time_data);
+%     temp2 = temp1 ~= sampling_interval;
+%     temp3a = find(temp2);
+%     temp3b = temp3a+1;
+% 
+%     temp4 = [1, temp3b; temp3a, length(time_data)];
+%     all_cont_ranges = permute(temp4, [2,1]);
+% end
+
+
+
 
 
 

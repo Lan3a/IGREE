@@ -1,9 +1,20 @@
+
 - IGREE -- IG Reels Emotion EEG study
 - Named it just thought it sounds cool enough
-<br/>
+<br>
 
+## TODOS: 
+- [x] fix markers and trim unnecessary time points -> done in another script
+- [x] new sets at every crucial step
+- [-] ~~automated bad channel rej, IC rej, epoch rej~~
+- [ ] epoch-by-epoch channel interpolation
+    - validate if channels are being extracted correctly
+- [ ] ASR implementation
+- [ ] RESIT / z normalization
+- [ ] (if ASR fails) outlier regression
+<br>
 
-Project structure: <br/>
+## Project structure:
 ```bash
 IG_Reels_Emotion_EEG/
 ├── data/
@@ -30,27 +41,26 @@ IG_Reels_Emotion_EEG/
 ├── G2P_1_SAM2.csv
 └── g2p_1_vid_duration.csv
 ```
-<br/>
+<br>
 
-
-Submodules are included in this repo, do:<br/>
-```
+## Clone the repo
+As **submodules** are included, do:
+```bash
 git clone --recurse-submodules https://github.com/Lan3a/IGREE.git
 ```
 
-You can always update submodules (or download them with --init flag if forgot before): <br/>
-```
+You can always update submodules if you cloned without submodules before
+```bash
+git submodule update --recursive --init     # if no submodule folders
 git submodule update --recursive
 ```
-<br/>
-
+<br>
 
 tip:
+to make push/pull also affect submodules automatically, do:
 ```
 git config --global submodule.recurse true
 git config --global push.recurseSubmodules on-demand
 ```
 
-This will make push/pull to also affect submodules automatically <br/>
-
-
+ 
