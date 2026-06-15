@@ -4,12 +4,10 @@
 % TODO: -> moved to README.md
 % 
 
-
 clc; clear; close all;
 project = initIGREE;
 
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
-
 
 %% Load EEG, resample, band filter, reject bad channel
 inDir = fullfile(project.dir.data, "correct_raw_eeg");
@@ -167,7 +165,7 @@ close all; beep; cpbGreen('All done!');
 %% interpolate bad channel, final re-reference, and rejecting bad epochs
 
 inDir = fullfile(project.dir.data, "preprocess_eeg", "ICA_done");
-outDir = fullfile(project.dir.data, "preprocess_eeg", "tempepoch_rejection_done");
+outDir = fullfile(project.dir.data, "preprocess_eeg", "temp3_epoch_rejection_done");
 inExt = "set"; outExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt}, {outDir, outExt});
 
@@ -327,7 +325,7 @@ close all; beep; cpbGreen('All done!');
 %% 
 
 %TODO - make the whole structure good
-inDir = fullfile(project.dir.data, "preprocess_eeg", "tempepoch_rejection_done");
+inDir = fullfile(project.dir.data, "preprocess_eeg", "temp_epoch_rejection_done");
 inExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt});
 EEG = pop_loadset('filename',dataFiles(1).fname,'filepath',dataFiles(1).dir);
