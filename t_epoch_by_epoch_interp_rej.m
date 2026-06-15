@@ -5,7 +5,7 @@ project = initIGREE;
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
 
 
-inDir = fullfile(project.dir.data, "preprocess_eeg", "temp_epoch_rejection_done");
+inDir = fullfile(project.dir.data, "preprocess_eeg", "temp3-clean_epoch_rejection_done");
 inExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt});
 EEG = pop_loadset('filename',dataFiles(1).fname,'filepath',dataFiles(1).dir);
@@ -15,9 +15,10 @@ tempEEG = EEG;
 EEG = tempEEG;
 EEG.data = EEG.data(1:end-4, :); %remove the custom channels and HEO, VEO from data
 EEG = eeg_checkset(EEG);
-
+eeglab redraw
 %%
-EEG = autoreject_detect_repair(EEG);
+% EEG = autoreject_detect_repair(EEG);
+EEG = autoreject_detect(EEG, 'thresh_lims', [10 95], 'verbose', false); % more conservative
 
 %%
 EEG = detect_badchan_app(EEG);
@@ -29,7 +30,7 @@ EEG = detect_badchan_artist(EEG);
 EEG = detect_badchan_infant_erp(EEG);
 
 %%
-EEG = detect_badchan_irpf(EEG);
+EEG = detect_badchan_irpf(EEG, 'knee_sensitivity', 1);
 
 %%
 EEG = detect_badchan_mcevoy(EEG);
@@ -52,5 +53,9 @@ pop_autoreject_scroll(EEG);
 
 
 
+
+%%
+
+pop_rejmenu(EEG, 1) 
 
 
