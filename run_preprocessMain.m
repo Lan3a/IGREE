@@ -52,12 +52,19 @@ for fidx = 1:length(dataFiles)
             saveFileName = dataFiles(fidx).fname;
             saveNewEegSet(EEG, newSetName, saveDir, saveFileName);
             
+            % Save Pngs
             try
-                pngStruct = EEG.moreInfo.badTimeDataPng;
-                savePngDir = fullfile(outDir, 'bad_time_data_pngs', dataFiles(fidx).bname);
-                saveStructStoredPng(pngStruct, savePngDir);
-            catch, disp('no pngs to save')
+                if isfield('EEG.moreInfo', 'badTimeDataPng') || ~isempty([EEG.moreInfo.badTimeDataPng.png])
+                    pngStruct = EEG.moreInfo.badTimeDataPng;
+                    savePngDir = fullfile(outDir, 'bad_time_data_pngs', dataFiles(fidx).bname);
+                    saveStructStoredPng(pngStruct, savePngDir);
+                else
+                    disp('No Pngs to save');
+                end
+            catch 
+                warning("Unexpected: Pngs are not saved, please check"); beep;
             end
+            
             disp('saving...');
         end
 
@@ -132,12 +139,19 @@ for fidx = 1:length(dataFiles)
             saveFileName = dataFiles(fidx).fname;
             saveNewEegSet(EEG, newSetName, saveDir, saveFileName);
             
+            % Save Pngs
             try
-                pngStruct = EEG.moreInfo.rejICsPng;
-                savePngDir = fullfile(outDir, 'rejected_IC_pngs', dataFiles(fidx).bname);
-                saveStructStoredPng(pngStruct, savePngDir);
-            catch, disp('no pngs to save')
+                if isfield('EEG.moreInfo', 'rejICsPng') || ~isempty([EEG.moreInfo.rejICsPng.png])
+                    pngStruct = EEG.moreInfo.rejICsPng;
+                    savePngDir = fullfile(outDir, 'rejected_IC_pngs', dataFiles(fidx).bname);
+                    saveStructStoredPng(pngStruct, savePngDir);
+                else
+                    disp('No Pngs to save');
+                end
+            catch 
+                warning("Unexpected: Pngs are not saved, please check"); beep;
             end
+
             disp('saving...');
         end
 
