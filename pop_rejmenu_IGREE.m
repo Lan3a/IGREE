@@ -1,24 +1,12 @@
 % pop_rejmenu_IGREE - Main menu for rejecting trials in an EEG dataset
 %
 % Usage: >> pop_rejmenu_IGREE(INEEG, typerej);
-%          pop_rejmenu_IGREE(INEEG, typerej, data_full);
 %
 % Inputs:
 %   INEEG     - input dataset used for automatic bad-epoch detection and UI
-%               (thresholds, scroll, eeg_rejsuperpose, etc.). Typically
-%               contains only the EEG channels used to mark bad epochs.
+%               (thresholds, scroll, eeg_rejsuperpose, etc.).
 %   typerej   - data to reject on (0 = component activations;
 %               1 = raw electrode data). {Default: 1 = reject on raw data}
-%   data_full - optional 3-D numeric matrix of size
-%               [nbchan_full x INEEG.pnts x INEEG.trials] containing the FULL
-%               set of channels (e.g. EEG + reference/EOG/EMG/...). When
-%               provided, "REJECT MARKED TRIALS" builds a new EEG dataset
-%               using INEEG's metadata with EEG.data replaced by this matrix
-%               (and EEG.nbchan updated), then drops the epochs marked on
-%               INEEG via pop_rejepoch. The resulting dataset (EEG.data is
-%               the all-channel data with marked epochs removed) is pushed
-%               into ALLEEG and becomes the current EEG.
-%               If omitted, behavior matches the original (reject on INEEG).
 %
 % Author: Arnaud Delorme, CNL / Salk Institute, 2001
 %
@@ -52,20 +40,19 @@
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 % THE POSSIBILITY OF SUCH DAMAGE.
 
-function pop_rejmenu_IGREE(EEG, icacomp, data_full)
+function pop_rejmenu_IGREE(EEG, icacomp)
 
-if nargin < 3
-    data_full = [];
+% --- initialise epoch-index tracking fields if they do not yet exist ---
+% These fields survive pop_rejepoch so that successive REJECT operations
+% always refer back to the original trial numbering.
+if ~isfield(EEG, 'moreInfo')
+    EEG.moreInfo = [];
 end
-use_separate_reject = ~isempty(data_full);
-if use_separate_reject
-    if ~(isnumeric(data_full) && ndims(data_full) == 3)
-        error('pop_rejmenu_IGREE: 3rd argument must be a 3-D numeric matrix [chans x pnts x trials]');
-    end
-    if size(data_full, 2) ~= EEG.pnts || size(data_full, 3) ~= EEG.trials
-        error('pop_rejmenu_IGREE: 3rd argument time/trial dims must match EEG.pnts (%d) and EEG.trials (%d); got [%d x %d x %d]', ...
-              EEG.pnts, EEG.trials, size(data_full,1), size(data_full,2), size(data_full,3));
-    end
+if ~isfield(EEG.moreInfo, 'rejEpochs') || isempty(EEG.moreInfo.rejEpochs)
+    EEG.moreInfo.rejEpochs = zeros(1, EEG.trials);
+end
+if ~isfield(EEG.moreInfo, 'currentEpochIdx') || isempty(EEG.moreInfo.currentEpochIdx)
+    EEG.moreInfo.currentEpochIdx = 1:EEG.trials;
 end
 
 if icacomp == 0
@@ -86,10 +73,10 @@ end
 
 figure('visible', 'off', 'numbertitle', 'off', 'name', rejtitle, 'tag', tagmenu);
 setappdata(gcf, 'pop_rejmenu_IGREE_origtrials', EEG.trials);
-setappdata(gcf, 'pop_rejmenu_IGREE_use_separate_reject', use_separate_reject);
-if use_separate_reject
-    setappdata(gcf, 'pop_rejmenu_IGREE_data_full', data_full);
-end
+nOriginalEpochs = length(EEG.moreInfo.rejEpochs);
+setappdata(gcf, 'pop_rejmenu_IGREE_nOriginalEpochs', nOriginalEpochs);
+setappdata(gcf, 'pop_rejmenu_IGREE_rejEpochsHistory',  sum(EEG.moreInfo.rejEpochs));
+setappdata(gcf, 'pop_rejmenu_IGREE_currentEpochIdx', EEG.moreInfo.currentEpochIdx);
 
 % definition of callbacks
 % -----------------------
@@ -213,50 +200,24 @@ cb_compkurteeg  = [ cb_compkurthead ...
                     cb_compkurttail ];
 
 % -----------------------------------------------------
-if use_separate_reject
-    cb_reject_else = [ ...
-                   '   data_full = getappdata(gcbf, ''pop_rejmenu_IGREE_data_full'');' ...
-                   '   EEG_full = EEG;' ...
-                   '   EEG_full.data    = data_full;' ...
-                   '   EEG_full.nbchan  = size(data_full, 1);' ...
-                   '   EEG_full.icaact  = [];' ...
-                   '   if isfield(EEG_full, ''chanlocs'') && length(EEG_full.chanlocs) ~= EEG_full.nbchan,' ...
-                   '      EEG_full.chanlocs = [];' ...
-                   '   end;' ...
-                   '   if isfield(EEG_full, ''urchanlocs'') && length(EEG_full.urchanlocs) ~= EEG_full.nbchan,' ...
-                   '      EEG_full.urchanlocs = [];' ...
-                   '   end;' ...
-                   '   EEG_full = eeg_checkset(EEG_full);' ...
-                   '   [EEG_full LASTCOM] = pop_rejepoch( EEG_full, EEG.reject.rejglobal, 1);' ...
-                   '   if ~isempty(LASTCOM), ' ...
-                   '      EEG_full = eegh(LASTCOM, EEG_full);' ...
-                   '      [ALLEEG EEG CURRENTSET LASTCOM] = pop_newset(ALLEEG, EEG_full, CURRENTSET); eegh(LASTCOM);' ...
-                   '   end; clear data_full EEG_full; eeglab redraw; close(gcbf);' ...
-                   ];
-else
-    cb_reject_else = [ ...
-                   '   [EEG LASTCOM] = pop_rejepoch( EEG, EEG.reject.rejglobal, 1);' ...
-                   '   if ~isempty(LASTCOM), ' ...
-                   '      EEG = eegh(LASTCOM, EEG); [ALLEEG EEG CURRENTSET LASTCOM] = pop_newset(ALLEEG, EEG, CURRENTSET); eegh(LASTCOM);' ...
-                   '   end; eeglab redraw; close(gcbf);' ...
-                   ];
-end
+cb_reject_else = [ ...
+               '   [EEG LASTCOM] = pop_rejepoch( EEG, EEG.reject.rejglobal, 1);' ...
+               '   if ~isempty(LASTCOM), ' ...
+               '      EEG = eegh(LASTCOM, EEG); [ALLEEG EEG CURRENTSET LASTCOM] = pop_newset(ALLEEG, EEG, CURRENTSET); eegh(LASTCOM);' ...
+               '   end; eeglab redraw; close(gcbf);' ...
+               ];
 cb_reject =      [ 'set( findobj(''parent'', gcbf, ''tag'', ''rejstatus''), ''value'', 3);' ... % force status to 3
                     checkstatus ...
                    '[EEG LASTCOM] = eeg_rejsuperpose(EEG,' int2str(icacomp) ',1,1,1,1,1,1,1); EEG = eegh(LASTCOM, EEG);' ...
                    'if isempty(find(EEG.reject.rejglobal)),' ...
                    '   warndlg2(strvcat(''No epoch selected...'', ''When using thresholding, click update'',''marks in the EEG plotting window''));' ...
                    'else,' ...
+                   '   EEG = pop_rejmenu_update_moreinfo_reject_IGREE(EEG);' ...
                    cb_reject_else ...
                    'end;' ];
 
-if use_separate_reject
-    cb_clear =       [ 'data_full_saved = getappdata(gcbf, ''pop_rejmenu_IGREE_data_full''); close gcbf; EEG = rmfield( EEG, ''reject''); EEG.reject.rejmanual = [];' ...
-                       'EEG=eeg_checkset(EEG); pop_rejmenu_IGREE(EEG,' int2str(icacomp) ', data_full_saved); clear data_full_saved;' ];
-else
-    cb_clear =       [ 'close gcbf; EEG = rmfield( EEG, ''reject''); EEG.reject.rejmanual = [];' ...
-                       'EEG=eeg_checkset(EEG); pop_rejmenu_IGREE(EEG,' int2str(icacomp) ');' ];
-end
+cb_clear =       [ 'close gcbf; EEG = rmfield( EEG, ''reject''); EEG.reject.rejmanual = [];' ...
+                   'EEG=eeg_checkset(EEG); pop_rejmenu_IGREE(EEG,' int2str(icacomp) ');' ];
 
 cb_close =       [ 'close gcbf;' ...
                    'disp(''Marks stored in dataset'');' ...
@@ -304,13 +265,16 @@ if isfield(EEG_tmp,'reject') && isfield(EEG_tmp.reject,'rejglobal') && ~isempty(
     rejcount_init = sum(EEG_tmp.reject.rejglobal);
 end
 remcount_init = origtrials_init - rejcount_init;
-if use_separate_reject
-    full_info_init = sprintf(' | REJECT target: full data %d ch x %d pnts', size(data_full, 1), size(data_full, 2));
-else
-    full_info_init = '';
+% append historical tracking info when moreInfo is present
+tracking_info_init = '';
+nOrig = length(EEG.moreInfo.rejEpochs);
+nRejHist = sum(EEG.moreInfo.rejEpochs);
+if nOrig > origtrials_init || nRejHist > 0
+    tracking_info_init = sprintf(' | History: %d/%d original epochs rejected', nRejHist, nOrig);
 end
-epochsummary_init = sprintf('%d remains (%d / %d rejected)%s', remcount_init, rejcount_init, origtrials_init, full_info_init);
-clear EEG_tmp LASTCOM_tmp rejcount_init remcount_init origtrials_init full_info_init
+epochsummary_init = sprintf('%d remains (%d / %d rejected)%s', ...
+    remcount_init, rejcount_init, origtrials_init, tracking_info_init);
+clear EEG_tmp LASTCOM_tmp rejcount_init remcount_init origtrials_init tracking_info_init nOrig nRejHist
 
 stdl = [0.25 1.2 0.8 1.2 0.8]; % standard line
 titl = [0.9 0.18 1.55]; % title line

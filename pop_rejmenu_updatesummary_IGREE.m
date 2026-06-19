@@ -2,10 +2,8 @@ function pop_rejmenu_IGREE_updatesummary(EEG, icacomp, tagmenu)
 % Update the epoch summary text in pop_rejmenu_IGREE.
 %
 % Shows "<remaining> remains (<rejected> / <total> rejected)" for the
-% epochs currently marked in EEG. When pop_rejmenu_IGREE was launched
-% with a full-channel 3-D matrix (data_full), the channel count of that
-% matrix is appended to the summary so the user can confirm the REJECT
-% button will operate on the full set of channels.
+% epochs currently marked in EEG, plus historical tracking info from
+% EEG.moreInfo.rejEpochs when available.
 
 fig = [];
 try
@@ -46,20 +44,23 @@ if isfield(EEG, 'reject') && isfield(EEG.reject, 'rejglobal') && ~isempty(EEG.re
 end
 remcount = origtrials - rejcount;
 
-full_info = '';
+% historical tracking info from EEG.moreInfo
+tracking_info = '';
 try
-    data_full = getappdata(fig, 'pop_rejmenu_IGREE_data_full');
-    if ~isempty(data_full) && isnumeric(data_full) && ndims(data_full) == 3
-        full_info = sprintf(' | REJECT target: full data %d ch x %d pnts', ...
-                            size(data_full, 1), size(data_full, 2));
+    if isfield(EEG, 'moreInfo') && isfield(EEG.moreInfo, 'rejEpochs') && ~isempty(EEG.moreInfo.rejEpochs)
+        nOrig = length(EEG.moreInfo.rejEpochs);
+        nRejHist = sum(EEG.moreInfo.rejEpochs);
+        if nOrig > origtrials || nRejHist > 0
+            tracking_info = sprintf(' | History: %d/%d original epochs rejected', nRejHist, nOrig);
+        end
     end
 catch
-    full_info = '';
+    tracking_info = '';
 end
 
 hsum = findobj('parent', fig, 'tag', 'epochsummary');
 if ~isempty(hsum)
     set(hsum, 'string', sprintf('%d remains (%d / %d rejected)%s', ...
-                                remcount, rejcount, origtrials, full_info));
+                                remcount, rejcount, origtrials, tracking_info));
 end
 

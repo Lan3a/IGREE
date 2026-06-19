@@ -6,10 +6,12 @@
 ## TODOS: 
 - [x] fix markers and trim unnecessary time points -> done in another script
 - [x] new sets at every crucial step
-- [-] ~~automated bad channel rej, IC rej, epoch rej~~
+- [x] ~~automated bad channel rej, IC rej, epoch rej~~
 - [ ] epoch-by-epoch channel interpolation
-    - validate if channels are being extracted correctly
-- [ ] ASR implementation
+    - [x] basic subepoch extraction and visualization
+    - [ ] algorithms to classify bad signal
+- [x] ~~ASR implementation~~
+    - Primarily used in online EEG instead, accuracy is not as high as relying ICA
 - [ ] RESIT / z normalization
 - [ ] (if ASR fails) outlier regression
 <br>

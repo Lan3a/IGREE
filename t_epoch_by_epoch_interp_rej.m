@@ -47,8 +47,13 @@ EEG = tempEEG;
 EEG.data = EEG.data(1:end-4, :); %remove the custom channels and HEO, VEO from data
 EEG = eeg_checkset(EEG);
 eeglab redraw
+%%
+% [sig, info] = extract_badchan_signals(EEG, 'locthresh', 5);    % Using improbable data method
+% [sig, info, EEG] = extract_badchan_signals_faster(EEG);    % Using improbable data method
 
-[sig, info] = extract_badchan_signals(EEG, 'locthresh', 5);    % Using improbable data method
+[sig, info, EEG] = extract_badchan_signals_faster(EEG, ...
+    'features', {'devmean'}, 'zthresh', 3);
+
 %% plot signals with some trick
 y_stack = 20;
 n_sig = size(sig, 1);
@@ -64,6 +69,9 @@ plot_sig = permute(reshape(temp, y_stack, size(temp,1)/y_stack, n_pnts), [1 3 2]
 EEG.data = plot_sig; %remove the custom channels and HEO, VEO from data
 EEG = eeg_checkset(EEG);
 eeglab redraw
+
+%%
+pop_epochwise_chanrej_scroll(EEG);
 
 % XX
 

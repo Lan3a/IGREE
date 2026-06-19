@@ -1,4 +1,4 @@
-% 
+%% Init
 % STEPS: -> refer to the google slide
 % 
 % TODO: -> moved to README.md
@@ -179,7 +179,7 @@ close all; beep; cpbGreen('All done!');
 %% interpolate bad channel, final re-reference, and rejecting bad epochs
 
 inDir = fullfile(project.dir.data, "preprocess_eeg", "ICA_done");
-outDir = fullfile(project.dir.data, "preprocess_eeg", "temp3_epoch_rejection_done");
+outDir = fullfile(project.dir.data, "preprocess_eeg", "epoch_rejection_done");
 inExt = "set"; outExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt}, {outDir, outExt});
 
@@ -290,7 +290,7 @@ for fidx = 1:length(dataFiles)
     
     % -------------------------------------------------------------------------
     % rejecting bad epochs
-    allChanData = cat(1, EEG.data, EEG.moreInfo.epochedTimeMsChannel, EEG.moreInfo.epochedSessionIdxChannel);
+    % allChanData = cat(1, EEG.data, EEG.moreInfo.epochedTimeMsChannel, EEG.moreInfo.epochedSessionIdxChannel);
     tempEEG = EEG;
 
     newSetName = sprintf('(%s) custom channels added', dataFiles(fidx).bname);
@@ -300,7 +300,7 @@ for fidx = 1:length(dataFiles)
         EEG = tempEEG;
         eeglab redraw
 
-        pop_rejmenu_IGREE(EEG, 1, allChanData) %output EEG.data will contain all channels
+        pop_rejmenu_IGREE(EEG, 1) %output EEG.data will contain all channels
         
         % =========================================================================
         % USER DIALOG
@@ -308,7 +308,6 @@ for fidx = 1:length(dataFiles)
         % if save
         if contains(choice, 'Save')
             
-
             newSetName = sprintf('(%s) Epoch rejection done', dataFiles(fidx).bname);
             saveDir = outDir;
             saveFileName = dataFiles(fidx).fname;
@@ -336,17 +335,16 @@ for fidx = 1:length(dataFiles)
 end
 close all; beep; cpbGreen('All done!');
 
-%% 
+%% (UNFINISHED) epoch-wise channel interpolation (automatic)
 
 %TODO - make the whole structure good
-inDir = fullfile(project.dir.data, "preprocess_eeg", "temp_epoch_rejection_done");
+inDir = fullfile(project.dir.data, "preprocess_eeg", "temp3-clean_epoch_rejection_done");
 inExt = "set";
 dataFiles = findFilesToProcess({inDir, inExt});
 EEG = pop_loadset('filename',dataFiles(1).fname,'filepath',dataFiles(1).dir);
 [ALLEEG, EEG, CURRENTSET] = eeg_store( ALLEEG, EEG, 0 );
 tempEEG = EEG;
 
-%%
 EEG = tempEEG;
 
 window_ms = 1000;
@@ -407,7 +405,6 @@ function subepoched_eeg_data = outputSubepochEeg(all_cont_ranges, window_pts, ov
     end
 
     % -------------------------------------------------------------------------
-
     ranges = all_moving_epoch_ranges; %MEM - refactor for each section
     cont_data = reshape(epoched_eeg_data, size(epoched_eeg_data, 1), []);
 
@@ -485,7 +482,7 @@ end
 
 
 
-%% zx Archive
+%% (ARCHIVE)
 
     % removing Cpz
     % EEG.moreInfo.chanLocsRefForInterp = EEG.chanlocs; %for later interp ref
