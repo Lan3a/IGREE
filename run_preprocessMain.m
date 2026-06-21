@@ -193,7 +193,7 @@ for fidx = 1:length(dataFiles)
     EEG = pop_interp(EEG, EEG.moreInfo.chanLocsRefForInterp);
     
     % final re-reference (with CAR)
-    EEG = pop_reref( EEG, []);
+    % EEG = pop_reref( EEG, []);
     
     % -------------------------------------------------------------------------
     % adding TIMEMS and SESSIONIDX channels (AI helped)
@@ -405,7 +405,7 @@ function subepoched_eeg_data = outputSubepochEeg(all_cont_ranges, window_pts, ov
     end
 
     % -------------------------------------------------------------------------
-    ranges = all_moving_epoch_ranges; %MEM - refactor for each section
+    ranges = all_moving_epoch_ranges;
     cont_data = reshape(epoched_eeg_data, size(epoched_eeg_data, 1), []);
 
     n_chans = size(cont_data,1);
