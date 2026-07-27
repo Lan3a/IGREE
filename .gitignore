@@ -5,8 +5,8 @@
 !**/projects/README.md
 
 # no files with prefixes z_ or zx_
-z_*
-zx_*
+**/z_*
+**/zx_*
 
 # no MATLAB .asv
 **/*.asv 
@@ -15,5 +15,5 @@ zx_*
 **/*.lnk
 
 # no R project files
-.Rproj.user
+**/.Rproj.user
 **/*.proj

@@ -28,7 +28,11 @@ for fidx = 1:length(dataFiles)
     EEG = pop_eegfiltnew(EEG, 'locutoff',48,'hicutoff',52,'revfilt',1); %notch 48-52 Hz
     EEG = pop_eegfiltnew(EEG, 'locutoff',1,'hicutoff',98); %band pass 1-98 Hz 
     
-    EEG.moreInfo.chanLocsRefForInterp = EEG.chanlocs; %eeglab compares the chanlocs later to this full chanlocs to see which chan is missing, then interp
+    labels = {EEG.chanlocs.labels}; %eeglab compares the chanlocs later to this full chanlocs to see which chan is missing, then interp
+    eog_labels = {'VEO', 'HEO'};
+    rej_idx_mask = ismember(labels, eog_labels);
+    keep_idx = find(~rej_idx_mask);
+    EEG.moreInfo.chanLocsRefForInterp = EEG.chanlocs(keep_idx);
 
     newSetName = sprintf('(%s) rejecting bad channels manually...', dataFiles(fidx).bname);
     [~, EEG, ~] = pop_newset([], EEG, 0, 'setname', newSetName, 'gui','off');
@@ -176,7 +180,7 @@ end
 close all; beep; cpbGreen('All done!');
 
 
-%% interpolate bad channel, final re-reference, and rejecting bad epochs
+%% interpolate bad channel, and rejecting bad epochs
 
 inDir = fullfile(project.dir.data, "preprocess_eeg", "ICA_done");
 outDir = fullfile(project.dir.data, "preprocess_eeg", "epoch_rejection_done");
@@ -191,10 +195,7 @@ for fidx = 1:length(dataFiles)
 
     % interp bad chans
     EEG = pop_interp(EEG, EEG.moreInfo.chanLocsRefForInterp);
-    
-    % final re-reference (with CAR)
-    % EEG = pop_reref( EEG, []);
-    
+
     % -------------------------------------------------------------------------
     % adding TIMEMS and SESSIONIDX channels (AI helped)
     nPts = size(EEG.data, 2);
@@ -336,6 +337,10 @@ end
 close all; beep; cpbGreen('All done!');
 
 %% (UNFINISHED) epoch-wise channel interpolation (automatic)
+
+%TODO
+% - remove EOGs (as backup if not already removed) from this step
+
 
 %TODO - make the whole structure good
 inDir = fullfile(project.dir.data, "preprocess_eeg", "temp3-clean_epoch_rejection_done");
